@@ -93,6 +93,12 @@ if 'results_data' not in st.session_state:
     st.session_state.results_data = []
 if 'current_status' not in st.session_state:
     st.session_state.current_status = ""
+if 'live_results' not in st.session_state:
+    st.session_state.live_results = []
+if 'suspended_results' not in st.session_state:
+    st.session_state.suspended_results = []
+if 'error_results' not in st.session_state:
+    st.session_state.error_results = []
 
 # Header with live counter
 st.markdown("""
@@ -102,7 +108,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Live Statistics Counter - Always visible with real values
+# Live Statistics Counter - Always visible
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
@@ -152,9 +158,8 @@ platform = st.sidebar.selectbox(
 )
 
 # Input Method Selection
-st.sidebar.markdown("## 📝 Input Method")
 input_method = st.sidebar.radio(
-    "Choose input method:",
+    "Input Method:",
     ["Upload File", "Paste Text"]
 )
 
@@ -174,12 +179,12 @@ if input_method == "Upload File":
         st.sidebar.success(f"✅ File loaded: {len(accounts)} accounts")
 
 else:
-    # Text Area Input
-    st.sidebar.markdown("### 📝 Paste Accounts")
+    # Text Input
+    st.sidebar.markdown("### Paste Accounts:")
     text_input = st.sidebar.text_area(
         "Enter accounts (one per line):",
         height=200,
-        placeholder="username1\nusername2:password\nusername3\n..."
+        placeholder="username1\nusername2:password\nusername3"
     )
     
     if text_input.strip():
@@ -245,6 +250,9 @@ if len(accounts) > 0:
                 st.session_state.error_count = 0
                 st.session_state.total_checked = 0
                 st.session_state.results_data = []
+                st.session_state.live_results = []
+                st.session_state.suspended_results = []
+                st.session_state.error_results = []
                 st.session_state.current_status = "Starting check process..."
                 st.rerun()
     
@@ -266,7 +274,187 @@ if len(accounts) > 0:
                 st.session_state.pause_checking = False
                 st.session_state.current_status = "Process stopped by user"
                 st.rerun()
+
+# Live Results Display - Show during and after checking
+if st.session_state.live_results or st.session_state.suspended_results or st.session_state.error_results:
+    st.markdown("---")
+    st.markdown("## 📊 Live Results")
     
+    tab1, tab2, tab3 = st.tabs(["🟢 Live Accounts", "🔴 Suspended Accounts", "⚠️ Error Accounts"])
+    
+    with tab1:
+        if st.session_state.live_results:
+            st.success(f"✅ Found {len(st.session_state.live_results)} Live Accounts:")
+            # Show last 20 results
+            display_results = st.session_state.live_results[-20:] if len(st.session_state.live_results) > 20 else st.session_state.live_results
+            for i, result in enumerate(display_results, 1):
+                st.text(f"{i}. {result}")
+            if len(st.session_state.live_results) > 20:
+                st.info(f"... and {len(st.session_state.live_results) - 20} more live accounts")
+        else:
+            st.info("No live accounts found yet")
+    
+    with tab2:
+        if st.session_state.suspended_results:
+            st.error(f"❌ Found {len(st.session_state.suspended_results)} Suspended Accounts:")
+            # Show last 20 results
+            display_results = st.session_state.suspended_results[-20:] if len(st.session_state.suspended_results) > 20 else st.session_state.suspended_results
+            for i, result in enumerate(display_results, 1):
+                st.text(f"{i}. {result}")
+            if len(st.session_state.suspended_results) > 20:
+                st.info(f"... and {len(st.session_state.suspended_results) - 20} more suspended accounts")
+        else:
+            st.info("No suspended accounts found yet")
+    
+    with tab3:
+        if st.session_state.error_results:
+            st.warning(f"⚠️ Found {len(st.session_state.error_results)} Error Accounts:")
+            # Show last 20 results
+            display_results = st.session_state.error_results[-20:] if len(st.session_state.error_results) > 20 else st.session_state.error_results
+            for i, result in enumerate(display_results, 1):
+                st.text(f"{i}. {result}")
+            if len(st.session_state.error_results) > 20:
+                st.info(f"... and {len(st.session_state.error_results) - 20} more error accounts")
+        else:
+            st.info("No error accounts found yet")
+
+# Download Buttons - Always show if there are results
+if st.session_state.live_results or st.session_state.suspended_results or st.session_state.error_results:
+    st.markdown("---")
+    st.markdown("## 📥 Download Results")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    # Live accounts download
+    with col1:
+        if st.session_state.live_results:
+            if download_format == "TXT":
+                live_data = '\n'.join(st.session_state.live_results)
+                file_ext = "txt"
+                mime_type = "text/plain"
+            else:
+                df_live = pd.DataFrame({
+                    'username': [line.split(':')[0] if ':' in line else line for line in st.session_state.live_results],
+                    'original_line': st.session_state.live_results,
+                    'status': ['live'] * len(st.session_state.live_results)
+                })
+                live_data = df_live.to_csv(index=False)
+                file_ext = "csv"
+                mime_type = "text/csv"
+            
+            st.download_button(
+                label=f"📥 Live Accounts ({download_format})",
+                data=live_data,
+                file_name=f"live_accounts_{platform.lower()}.{file_ext}",
+                mime=mime_type,
+                type="primary"
+            )
+            st.success(f"✅ {len(st.session_state.live_results)} Live Accounts")
+        else:
+            st.info("No live accounts to download")
+    
+    # Suspended accounts download
+    with col2:
+        if st.session_state.suspended_results:
+            if download_format == "TXT":
+                suspended_data = '\n'.join(st.session_state.suspended_results)
+                file_ext = "txt"
+                mime_type = "text/plain"
+            else:
+                df_suspended = pd.DataFrame({
+                    'username': [line.split(':')[0] if ':' in line else line for line in st.session_state.suspended_results],
+                    'original_line': st.session_state.suspended_results,
+                    'status': ['suspended'] * len(st.session_state.suspended_results)
+                })
+                suspended_data = df_suspended.to_csv(index=False)
+                file_ext = "csv"
+                mime_type = "text/csv"
+            
+            st.download_button(
+                label=f"📥 Suspended ({download_format})",
+                data=suspended_data,
+                file_name=f"suspended_accounts_{platform.lower()}.{file_ext}",
+                mime=mime_type
+            )
+            st.error(f"❌ {len(st.session_state.suspended_results)} Suspended")
+        else:
+            st.info("No suspended accounts")
+    
+    # Error accounts download
+    with col3:
+        if st.session_state.error_results:
+            if download_format == "TXT":
+                error_data = '\n'.join(st.session_state.error_results)
+                file_ext = "txt"
+                mime_type = "text/plain"
+            else:
+                df_error = pd.DataFrame({
+                    'username': [line.split(':')[0] if ':' in line else line for line in st.session_state.error_results],
+                    'original_line': st.session_state.error_results,
+                    'status': ['error'] * len(st.session_state.error_results)
+                })
+                error_data = df_error.to_csv(index=False)
+                file_ext = "csv"
+                mime_type = "text/csv"
+            
+            st.download_button(
+                label=f"📥 Errors ({download_format})",
+                data=error_data,
+                file_name=f"error_accounts_{platform.lower()}.{file_ext}",
+                mime=mime_type
+            )
+            st.warning(f"⚠️ {len(st.session_state.error_results)} Errors")
+        else:
+            st.info("No error accounts")
+    
+    # All results download
+    with col4:
+        all_results = st.session_state.live_results + st.session_state.suspended_results + st.session_state.error_results
+        if all_results:
+            if download_format == "TXT":
+                all_data = '\n'.join(all_results)
+                file_ext = "txt"
+                mime_type = "text/plain"
+            else:
+                # Create combined dataframe
+                df_all = pd.DataFrame()
+                
+                if st.session_state.live_results:
+                    df_live = pd.DataFrame({
+                        'username': [line.split(':')[0] if ':' in line else line for line in st.session_state.live_results],
+                        'original_line': st.session_state.live_results,
+                        'status': ['live'] * len(st.session_state.live_results)
+                    })
+                    df_all = pd.concat([df_all, df_live], ignore_index=True)
+                
+                if st.session_state.suspended_results:
+                    df_suspended = pd.DataFrame({
+                        'username': [line.split(':')[0] if ':' in line else line for line in st.session_state.suspended_results],
+                        'original_line': st.session_state.suspended_results,
+                        'status': ['suspended'] * len(st.session_state.suspended_results)
+                    })
+                    df_all = pd.concat([df_all, df_suspended], ignore_index=True)
+                
+                if st.session_state.error_results:
+                    df_error = pd.DataFrame({
+                        'username': [line.split(':')[0] if ':' in line else line for line in st.session_state.error_results],
+                        'original_line': st.session_state.error_results,
+                        'status': ['error'] * len(st.session_state.error_results)
+                    })
+                    df_all = pd.concat([df_all, df_error], ignore_index=True)
+                
+                all_data = df_all.to_csv(index=False)
+                file_ext = "csv"
+                mime_type = "text/csv"
+            
+            st.download_button(
+                label=f"📥 All Results ({download_format})",
+                data=all_data,
+                file_name=f"all_results_{platform.lower()}.{file_ext}",
+                mime=mime_type
+            )
+            st.info(f"📊 {len(all_results)} Total Results")
+
     # Checking Process
     if st.session_state.checking_active and not st.session_state.pause_checking:
         checker = SocialMediaChecker()
@@ -275,10 +463,7 @@ if len(accounts) > 0:
         progress_bar = st.progress(0)
         status_placeholder = st.empty()
         
-        # Create placeholders for live updates
-        live_placeholder = st.empty()
-        
-        # Progress update function
+        # Progress update function with immediate UI updates
         def update_progress(current, total, username, status):
             if not st.session_state.checking_active:
                 return False
@@ -290,15 +475,29 @@ if len(accounts) > 0:
             if not st.session_state.checking_active:
                 return False
             
-            # Update counters based on status
+            # Get original line for this account
+            original_line = accounts[current-1] if current <= len(accounts) else username
+            
+            # Update counters and store results immediately
             if status == "live":
                 st.session_state.live_count += 1
+                st.session_state.live_results.append(original_line)
             elif status == "suspended":
                 st.session_state.suspended_count += 1
+                st.session_state.suspended_results.append(original_line)
             else:
                 st.session_state.error_count += 1
+                st.session_state.error_results.append(original_line)
             
             st.session_state.total_checked = current
+            
+            # Store in results_data for compatibility
+            st.session_state.results_data.append({
+                'username': username,
+                'status': status,
+                'original_line': original_line,
+                'platform': platform
+            })
             
             # Update progress bar
             progress = current / total
@@ -308,9 +507,8 @@ if len(accounts) > 0:
             pause_status = " (PAUSED)" if st.session_state.pause_checking else ""
             st.session_state.current_status = f"Checking: {username} ({current}/{total}) - Status: {status}{pause_status}"
             
-            # Force UI update by rerunning every few accounts
-            if current % 3 == 0:  # Update UI every 3 accounts
-                st.rerun()
+            # Force UI update every account for real-time display
+            st.rerun()
             
             return st.session_state.checking_active
         
@@ -318,9 +516,6 @@ if len(accounts) > 0:
         start_time = time.time()
         results = checker.check_accounts(accounts, platform, update_progress)
         end_time = time.time()
-        
-        # Store results
-        st.session_state.results_data = results
         
         # Clear progress indicators
         progress_bar.empty()
@@ -336,176 +531,6 @@ if len(accounts) > 0:
         
         st.session_state.checking_active = False
         st.rerun()
-
-# Results Display and Download - Show if results exist
-if st.session_state.results_data and len(st.session_state.results_data) > 0:
-    df = pd.DataFrame(st.session_state.results_data)
-    
-    st.markdown("---")
-    st.markdown("## 📊 Final Statistics")
-    
-    # Statistics
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("Total Processed", len(st.session_state.results_data))
-    with col2:
-        live_count = len(df[df['status'] == 'live'])
-        st.metric("Live Accounts", live_count)
-    with col3:
-        suspended_count = len(df[df['status'] == 'suspended'])
-        st.metric("Suspended Accounts", suspended_count)
-    with col4:
-        error_count = len(df[~df['status'].isin(['live', 'suspended'])])
-        st.metric("Errors/Unknown", error_count)
-    
-    # Charts
-    status_counts = df['status'].value_counts()
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        # Pie chart
-        fig_pie = px.pie(
-            values=status_counts.values, 
-            names=status_counts.index,
-            title=f"Account Status Distribution - {platform}",
-            color_discrete_map={
-                'live': '#4facfe',
-                'suspended': '#ff6b6b', 
-                'unknown': '#feca57',
-                'error': '#95a5a6'
-            }
-        )
-        st.plotly_chart(fig_pie, use_container_width=True)
-    
-    with col2:
-        # Bar chart
-        fig_bar = px.bar(
-            x=status_counts.index,
-            y=status_counts.values,
-            title=f"Account Count by Status - {platform}",
-            color=status_counts.index,
-            color_discrete_map={
-                'live': '#4facfe',
-                'suspended': '#ff6b6b',
-                'unknown': '#feca57', 
-                'error': '#95a5a6'
-            }
-        )
-        fig_bar.update_layout(showlegend=False)
-        st.plotly_chart(fig_bar, use_container_width=True)
-    
-    # Download Buttons
-    st.markdown("## 📥 Download Results")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    # Live accounts download
-    with col1:
-        live_accounts = df[df['status'] == 'live']
-        if not live_accounts.empty:
-            if download_format == "TXT":
-                live_data = '\n'.join(live_accounts['original_line'].tolist())
-                file_ext = "txt"
-                mime_type = "text/plain"
-            else:
-                live_data = live_accounts.to_csv(index=False)
-                file_ext = "csv"
-                mime_type = "text/csv"
-            
-            st.download_button(
-                label=f"📥 Live Accounts ({download_format})",
-                data=live_data,
-                file_name=f"live_accounts_{platform.lower()}.{file_ext}",
-                mime=mime_type,
-                type="primary"
-            )
-        else:
-            st.info("No live accounts found")
-    
-    # Suspended accounts download
-    with col2:
-        suspended_accounts = df[df['status'] == 'suspended']
-        if not suspended_accounts.empty:
-            if download_format == "TXT":
-                suspended_data = '\n'.join(suspended_accounts['original_line'].tolist())
-                file_ext = "txt"
-                mime_type = "text/plain"
-            else:
-                suspended_data = suspended_accounts.to_csv(index=False)
-                file_ext = "csv"
-                mime_type = "text/csv"
-            
-            st.download_button(
-                label=f"📥 Suspended ({download_format})",
-                data=suspended_data,
-                file_name=f"suspended_accounts_{platform.lower()}.{file_ext}",
-                mime=mime_type
-            )
-        else:
-            st.info("No suspended accounts")
-    
-    # Error accounts download
-    with col3:
-        error_accounts = df[~df['status'].isin(['live', 'suspended'])]
-        if not error_accounts.empty:
-            if download_format == "TXT":
-                error_data = '\n'.join(error_accounts['original_line'].tolist())
-                file_ext = "txt"
-                mime_type = "text/plain"
-            else:
-                error_data = error_accounts.to_csv(index=False)
-                file_ext = "csv"
-                mime_type = "text/csv"
-            
-            st.download_button(
-                label=f"📥 Errors ({download_format})",
-                data=error_data,
-                file_name=f"error_accounts_{platform.lower()}.{file_ext}",
-                mime=mime_type
-            )
-        else:
-            st.info("No error accounts")
-    
-    # All results download
-    with col4:
-        if download_format == "TXT":
-            all_data = '\n'.join(df['original_line'].tolist())
-            file_ext = "txt"
-            mime_type = "text/plain"
-        else:
-            all_data = df.to_csv(index=False)
-            file_ext = "csv"
-            mime_type = "text/csv"
-        
-        st.download_button(
-            label=f"📥 All Results ({download_format})",
-            data=all_data,
-            file_name=f"all_results_{platform.lower()}.{file_ext}",
-            mime=mime_type
-        )
-    
-    # Results Tables
-    st.markdown("## 📋 Detailed Results")
-    
-    tab1, tab2, tab3 = st.tabs(["🟢 Live Accounts", "🔴 Suspended Accounts", "📊 All Results"])
-    
-    with tab1:
-        live_accounts = df[df['status'] == 'live']
-        if not live_accounts.empty:
-            st.dataframe(live_accounts[['username', 'status', 'original_line']], use_container_width=True)
-        else:
-            st.info("No live accounts found")
-    
-    with tab2:
-        suspended_accounts = df[df['status'] == 'suspended']
-        if not suspended_accounts.empty:
-            st.dataframe(suspended_accounts[['username', 'status', 'original_line']], use_container_width=True)
-        else:
-            st.info("No suspended accounts found")
-    
-    with tab3:
-        st.dataframe(df[['username', 'status', 'original_line']], use_container_width=True)
 
 else:
     # Welcome Page
