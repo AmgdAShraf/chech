@@ -7,7 +7,7 @@ import io
 import time
 import threading
 
-# Page configuration
+# Page Configuration
 st.set_page_config(
     page_title="Social Media Account Checker",
     page_icon="🔍",
@@ -18,70 +18,66 @@ st.set_page_config(
 # Custom CSS for professional styling
 st.markdown("""
 <style>
-    .main-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 2rem;
-        border-radius: 15px;
-        margin-bottom: 2rem;
-        text-align: center;
-        color: white;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    .stApp {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     }
     
     .metric-card {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        padding: 1.5rem;
-        border-radius: 12px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1rem;
+        border-radius: 10px;
+        color: white;
         text-align: center;
-        margin: 0.5rem;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        border-left: 4px solid #667eea;
+        margin: 0.5rem 0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
     
-    .status-live {
-        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-        color: #2d5016;
-        font-weight: bold;
-        padding: 0.5rem;
-        border-radius: 8px;
-        text-align: center;
+    .success-card {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        padding: 1rem;
+        border-radius: 10px;
+        color: white;
+        margin: 0.5rem 0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
     
-    .status-suspended {
-        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-        color: #8b2635;
-        font-weight: bold;
-        padding: 0.5rem;
-        border-radius: 8px;
-        text-align: center;
-    }
-    
-    .control-panel {
-        background: linear-gradient(135deg, #e3ffe7 0%, #d9e7ff 100%);
-        padding: 1.5rem;
-        border-radius: 12px;
-        margin: 1rem 0;
-        border: 2px solid #667eea;
+    .error-card {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        padding: 1rem;
+        border-radius: 10px;
+        color: white;
+        margin: 0.5rem 0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
     
     .stButton > button {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border: none;
-        border-radius: 8px;
-        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        padding: 0.5rem 2rem;
         font-weight: bold;
         transition: all 0.3s ease;
     }
     
     .stButton > button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     }
     
-    .sidebar .stSelectbox > div > div {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        border-radius: 8px;
+    .live-counter {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        padding: 2rem;
+        border-radius: 15px;
+        text-align: center;
+        margin: 1rem 0;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stTextArea > div > div > textarea {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 10px;
+        border: 2px solid #667eea;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -101,33 +97,109 @@ if 'total_checked' not in st.session_state:
     st.session_state.total_checked = 0
 if 'results_data' not in st.session_state:
     st.session_state.results_data = []
+if 'current_status' not in st.session_state:
+    st.session_state.current_status = ""
 
-# Main header
+# Header with live counter
 st.markdown("""
-<div class="main-header">
+<div class="live-counter">
     <h1>🔍 Social Media Account Checker</h1>
-    <p>Professional tool for checking account status across social media platforms</p>
+    <p style="font-size: 1.2rem; margin: 0;">Professional Account Verification Tool</p>
 </div>
 """, unsafe_allow_html=True)
 
-# Sidebar
-st.sidebar.header("⚙️ Configuration")
+# Live Statistics Counter - Always visible
+col1, col2, col3, col4 = st.columns(4)
 
-# Platform selection
+with col1:
+    st.markdown(f"""
+    <div class="metric-card">
+        <h3>{st.session_state.total_checked}</h3>
+        <p>Total Checked</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col2:
+    st.markdown(f"""
+    <div class="success-card">
+        <h3>{st.session_state.live_count}</h3>
+        <p>Live Accounts</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col3:
+    st.markdown(f"""
+    <div class="error-card">
+        <h3>{st.session_state.suspended_count}</h3>
+        <p>Suspended</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col4:
+    st.markdown(f"""
+    <div class="metric-card">
+        <h3>{st.session_state.error_count}</h3>
+        <p>Errors</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Current status display
+if st.session_state.current_status:
+    st.info(f"🔄 {st.session_state.current_status}")
+
+# Sidebar Configuration
+st.sidebar.markdown("## ⚙️ Settings")
+
+# Platform Selection
 platform = st.sidebar.selectbox(
     "Select Platform:",
     ["Instagram", "Twitter", "TikTok"],
     index=0
 )
 
-# File upload
-uploaded_file = st.sidebar.file_uploader(
-    "Upload Account File (.txt)",
-    type=['txt'],
-    help="Text file containing usernames, one per line"
+# Input method selection
+st.sidebar.markdown("## 📝 Input Method")
+input_method = st.sidebar.radio(
+    "Choose input method:",
+    ["Upload File", "Paste Text"]
 )
 
-# Platform information
+accounts = []
+
+if input_method == "Upload File":
+    # File Upload
+    uploaded_file = st.sidebar.file_uploader(
+        "Upload Accounts File (.txt)",
+        type=['txt'],
+        help="Text file containing usernames, one per line"
+    )
+    
+    if uploaded_file is not None:
+        content = uploaded_file.read().decode('utf-8')
+        accounts = [line.strip() for line in content.split('\n') if line.strip()]
+        st.sidebar.success(f"✅ File loaded: {len(accounts)} accounts")
+
+else:
+    # Text Area Input
+    st.sidebar.markdown("### 📝 Paste Accounts")
+    text_input = st.sidebar.text_area(
+        "Enter accounts (one per line):",
+        height=200,
+        placeholder="username1\nusername2:password\nusername3\n..."
+    )
+    
+    if text_input.strip():
+        accounts = [line.strip() for line in text_input.split('\n') if line.strip()]
+        st.sidebar.success(f"✅ Text loaded: {len(accounts)} accounts")
+
+# Download Format Selection
+st.sidebar.markdown("## 📥 Download Format")
+download_format = st.sidebar.radio(
+    "Choose format:",
+    ["TXT", "CSV"]
+)
+
+# Platform Information
 platform_info = {
     "Instagram": {
         "icon": "📷",
@@ -138,66 +210,25 @@ platform_info = {
     "Twitter": {
         "icon": "🐦", 
         "url": "twitter.com",
-        "description": "Check Twitter account status and suspension",
+        "description": "Verify Twitter account status and suspension",
         "color": "#1DA1F2"
     },
     "TikTok": {
         "icon": "🎵",
         "url": "tiktok.com", 
         "description": "Check TikTok account status and availability",
-        "color": "#FF0050"
+        "color": "#000000"
     }
 }
 
-# Platform info display
+# Display Platform Info
 st.sidebar.markdown("---")
 st.sidebar.markdown(f"### {platform_info[platform]['icon']} {platform}")
 st.sidebar.markdown(f"**Website:** {platform_info[platform]['url']}")
 st.sidebar.markdown(f"**Description:** {platform_info[platform]['description']}")
 
-# Real-time counters at the top
-if st.session_state.checking_active or st.session_state.total_checked > 0:
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3 style="color: #667eea; margin: 0;">Total Checked</h3>
-            <h2 style="margin: 0.5rem 0;">{st.session_state.total_checked}</h2>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3 style="color: #28a745; margin: 0;">Live Accounts</h3>
-            <h2 style="margin: 0.5rem 0; color: #28a745;">{st.session_state.live_count}</h2>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3 style="color: #dc3545; margin: 0;">Suspended</h3>
-            <h2 style="margin: 0.5rem 0; color: #dc3545;">{st.session_state.suspended_count}</h2>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col4:
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3 style="color: #ffc107; margin: 0;">Errors</h3>
-            <h2 style="margin: 0.5rem 0; color: #ffc107;">{st.session_state.error_count}</h2>
-        </div>
-        """, unsafe_allow_html=True)
-
-# Main content
-if uploaded_file is not None:
-    # Read file
-    content = uploaded_file.read().decode('utf-8')
-    accounts = [line.strip() for line in content.split('\n') if line.strip()]
-    
-    st.success(f"✅ File uploaded successfully! Total accounts: {len(accounts)}")
+# Main Content
+if len(accounts) > 0:
     
     # Show account preview
     with st.expander("👀 Preview Accounts"):
@@ -207,18 +238,12 @@ if uploaded_file is not None:
         if len(accounts) > 10:
             st.info(f"... and {len(accounts) - 10} more accounts")
     
-    # Control panel
-    st.markdown("""
-    <div class="control-panel">
-        <h3 style="color: #667eea; margin-bottom: 1rem;">🎛️ Control Panel</h3>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns(3)
+    # Control Buttons
+    col1, col2, col3 = st.columns([2, 1, 1])
     
     with col1:
         if not st.session_state.checking_active:
-            if st.button(f"🚀 Start Checking {platform}", type="primary", use_container_width=True):
+            if st.button(f"🚀 Start Checking {platform} Accounts", type="primary"):
                 st.session_state.checking_active = True
                 st.session_state.pause_checking = False
                 st.session_state.live_count = 0
@@ -226,43 +251,52 @@ if uploaded_file is not None:
                 st.session_state.error_count = 0
                 st.session_state.total_checked = 0
                 st.session_state.results_data = []
+                st.session_state.current_status = "Starting check process..."
                 st.rerun()
     
     with col2:
         if st.session_state.checking_active:
-            if not st.session_state.pause_checking:
-                if st.button("⏸️ Pause", use_container_width=True):
-                    st.session_state.pause_checking = True
-                    st.rerun()
-            else:
-                if st.button("▶️ Resume", use_container_width=True):
-                    st.session_state.pause_checking = False
-                    st.rerun()
+            pause_text = "▶️ Resume" if st.session_state.pause_checking else "⏸️ Pause"
+            if st.button(pause_text, key="pause_btn"):
+                st.session_state.pause_checking = not st.session_state.pause_checking
+                if st.session_state.pause_checking:
+                    st.session_state.current_status = "Process paused by user"
+                else:
+                    st.session_state.current_status = "Process resumed"
+                st.rerun()
     
     with col3:
         if st.session_state.checking_active:
-            if st.button("🛑 Stop", use_container_width=True):
+            if st.button("🛑 Stop", key="stop_btn"):
                 st.session_state.checking_active = False
                 st.session_state.pause_checking = False
+                st.session_state.current_status = "Process stopped by user"
                 st.rerun()
     
-    # Checking process
+    # Checking Process
     if st.session_state.checking_active and not st.session_state.pause_checking:
         checker = SocialMediaChecker()
         
+        # Progress indicators
         progress_bar = st.progress(0)
-        status_text = st.empty()
+        status_placeholder = st.empty()
         
+        # Create placeholders for live updates
+        live_placeholder = st.empty()
+        
+        # Progress update function
         def update_progress(current, total, username, status):
             if not st.session_state.checking_active:
                 return False
-            
+                
+            # Handle pause
             while st.session_state.pause_checking and st.session_state.checking_active:
                 time.sleep(0.1)
             
             if not st.session_state.checking_active:
                 return False
             
+            # Update counters
             if status == "live":
                 st.session_state.live_count += 1
             elif status == "suspended":
@@ -272,222 +306,231 @@ if uploaded_file is not None:
             
             st.session_state.total_checked = current
             
+            # Update progress bar
             progress = current / total
             progress_bar.progress(progress)
-            status_text.text(f"Checking: {username} ({current}/{total}) - Status: {status}")
             
-            return True
+            # Update status
+            pause_status = " (PAUSED)" if st.session_state.pause_checking else ""
+            st.session_state.current_status = f"Checking: {username} ({current}/{total}) - Status: {status}{pause_status}"
+            
+            # Force UI update
+            status_placeholder.info(f"🔄 {st.session_state.current_status}")
+            
+            return st.session_state.checking_active
         
+        # Start checking
         start_time = time.time()
         results = checker.check_accounts(accounts, platform, update_progress)
         end_time = time.time()
         
+        # Store results
         st.session_state.results_data = results
-        st.session_state.checking_active = False
         
+        # Clear progress indicators
         progress_bar.empty()
-        status_text.empty()
+        status_placeholder.empty()
         
-        st.success(f"✅ Checking completed in {end_time - start_time:.2f} seconds")
+        # Show completion message
+        if st.session_state.checking_active:
+            st.session_state.current_status = f"✅ Checking completed in {end_time - start_time:.2f} seconds"
+            st.success(st.session_state.current_status)
+        else:
+            st.session_state.current_status = "⚠️ Checking was stopped by user"
+            st.warning(st.session_state.current_status)
+        
+        st.session_state.checking_active = False
         st.rerun()
+
+# Results Display and Download - Always show if results exist
+if st.session_state.results_data:
+    df = pd.DataFrame(st.session_state.results_data)
     
-    # Display results if available
-    if st.session_state.results_data:
-        df = pd.DataFrame(st.session_state.results_data)
-        
-        st.markdown("## 📊 Final Statistics")
-        
-        # Statistics visualization
-        status_counts = df['status'].value_counts()
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # Pie chart
-            fig_pie = px.pie(
-                values=status_counts.values, 
-                names=status_counts.index,
-                title=f"Account Status Distribution - {platform}",
-                color_discrete_map={
-                    'live': '#28a745',
-                    'suspended': '#dc3545', 
-                    'unknown': '#ffc107',
-                    'error': '#6c757d'
-                }
-            )
-            fig_pie.update_layout(
-                font=dict(size=14),
-                title_font_size=16,
-                showlegend=True
-            )
-            st.plotly_chart(fig_pie, use_container_width=True)
-        
-        with col2:
-            # Bar chart
-            fig_bar = px.bar(
-                x=status_counts.index,
-                y=status_counts.values,
-                title=f"Account Count by Status - {platform}",
-                color=status_counts.index,
-                color_discrete_map={
-                    'live': '#28a745',
-                    'suspended': '#dc3545',
-                    'unknown': '#ffc107', 
-                    'error': '#6c757d'
-                }
-            )
-            fig_bar.update_layout(
-                showlegend=False,
-                font=dict(size=14),
-                title_font_size=16
-            )
-            st.plotly_chart(fig_bar, use_container_width=True)
-        
-        # Download section
-        st.markdown("## 📥 Download Results")
-        
-        col1, col2, col3, col4 = st.columns(4)
-        
-        # Live accounts download
-        with col1:
-            live_accounts = df[df['status'] == 'live']
-            if not live_accounts.empty:
-                live_text = '\n'.join(live_accounts['original_line'].tolist())
-                
-                # TXT download
-                st.download_button(
-                    label="📄 Live Accounts (TXT)",
-                    data=live_text,
-                    file_name=f"live_accounts_{platform.lower()}.txt",
-                    mime="text/plain",
-                    use_container_width=True
-                )
-                
-                # CSV download
-                live_csv = live_accounts.to_csv(index=False)
-                st.download_button(
-                    label="📊 Live Accounts (CSV)",
-                    data=live_csv,
-                    file_name=f"live_accounts_{platform.lower()}.csv",
-                    mime="text/csv",
-                    use_container_width=True
-                )
-        
-        # Suspended accounts download
-        with col2:
-            suspended_accounts = df[df['status'] == 'suspended']
-            if not suspended_accounts.empty:
-                suspended_text = '\n'.join(suspended_accounts['original_line'].tolist())
-                
-                # TXT download
-                st.download_button(
-                    label="🚫 Suspended (TXT)",
-                    data=suspended_text,
-                    file_name=f"suspended_accounts_{platform.lower()}.txt",
-                    mime="text/plain",
-                    use_container_width=True
-                )
-                
-                # CSV download
-                suspended_csv = suspended_accounts.to_csv(index=False)
-                st.download_button(
-                    label="📊 Suspended (CSV)",
-                    data=suspended_csv,
-                    file_name=f"suspended_accounts_{platform.lower()}.csv",
-                    mime="text/csv",
-                    use_container_width=True
-                )
-        
-        # Error accounts download
-        with col3:
-            error_accounts = df[~df['status'].isin(['live', 'suspended'])]
-            if not error_accounts.empty:
-                error_text = '\n'.join(error_accounts['original_line'].tolist())
-                
-                # TXT download
-                st.download_button(
-                    label="⚠️ Errors (TXT)",
-                    data=error_text,
-                    file_name=f"error_accounts_{platform.lower()}.txt",
-                    mime="text/plain",
-                    use_container_width=True
-                )
-                
-                # CSV download
-                error_csv = error_accounts.to_csv(index=False)
-                st.download_button(
-                    label="📊 Errors (CSV)",
-                    data=error_csv,
-                    file_name=f"error_accounts_{platform.lower()}.csv",
-                    mime="text/csv",
-                    use_container_width=True
-                )
-        
-        # All results download
-        with col4:
-            all_text = '\n'.join(df['original_line'].tolist())
+    st.markdown("---")
+    st.markdown("## 📊 Final Statistics")
+    
+    # Statistics
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Processed", len(st.session_state.results_data))
+    with col2:
+        st.metric("Live Accounts", len(df[df['status'] == 'live']))
+    with col3:
+        st.metric("Suspended Accounts", len(df[df['status'] == 'suspended']))
+    with col4:
+        st.metric("Errors/Unknown", len(df[~df['status'].isin(['live', 'suspended'])]))
+    
+    # Charts
+    status_counts = df['status'].value_counts()
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Pie chart
+        fig_pie = px.pie(
+            values=status_counts.values, 
+            names=status_counts.index,
+            title=f"Account Status Distribution - {platform}",
+            color_discrete_map={
+                'live': '#4facfe',
+                'suspended': '#ff6b6b', 
+                'unknown': '#feca57',
+                'error': '#95a5a6'
+            }
+        )
+        st.plotly_chart(fig_pie, use_container_width=True)
+    
+    with col2:
+        # Bar chart
+        fig_bar = px.bar(
+            x=status_counts.index,
+            y=status_counts.values,
+            title=f"Account Count by Status - {platform}",
+            color=status_counts.index,
+            color_discrete_map={
+                'live': '#4facfe',
+                'suspended': '#ff6b6b',
+                'unknown': '#feca57', 
+                'error': '#95a5a6'
+            }
+        )
+        fig_bar.update_layout(showlegend=False)
+        st.plotly_chart(fig_bar, use_container_width=True)
+    
+    # Download Buttons
+    st.markdown("## 📥 Download Results")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    # Live accounts download
+    with col1:
+        live_accounts = df[df['status'] == 'live']
+        if not live_accounts.empty:
+            if download_format == "TXT":
+                live_data = '\n'.join(live_accounts['original_line'].tolist())
+                file_ext = "txt"
+                mime_type = "text/plain"
+            else:
+                live_data = live_accounts.to_csv(index=False)
+                file_ext = "csv"
+                mime_type = "text/csv"
             
-            # TXT download
             st.download_button(
-                label="📋 All Results (TXT)",
-                data=all_text,
-                file_name=f"all_results_{platform.lower()}.txt",
-                mime="text/plain",
-                use_container_width=True
+                label=f"📥 Live Accounts ({download_format})",
+                data=live_data,
+                file_name=f"live_accounts_{platform.lower()}.{file_ext}",
+                mime=mime_type,
+                type="primary"
             )
+        else:
+            st.info("No live accounts found")
+    
+    # Suspended accounts download
+    with col2:
+        suspended_accounts = df[df['status'] == 'suspended']
+        if not suspended_accounts.empty:
+            if download_format == "TXT":
+                suspended_data = '\n'.join(suspended_accounts['original_line'].tolist())
+                file_ext = "txt"
+                mime_type = "text/plain"
+            else:
+                suspended_data = suspended_accounts.to_csv(index=False)
+                file_ext = "csv"
+                mime_type = "text/csv"
             
-            # CSV download
-            all_csv = df.to_csv(index=False)
             st.download_button(
-                label="📊 All Results (CSV)",
-                data=all_csv,
-                file_name=f"all_results_{platform.lower()}.csv",
-                mime="text/csv",
-                use_container_width=True
+                label=f"📥 Suspended ({download_format})",
+                data=suspended_data,
+                file_name=f"suspended_accounts_{platform.lower()}.{file_ext}",
+                mime=mime_type
             )
-        
-        # Detailed results tables
-        st.markdown("## 📋 Detailed Results")
-        
-        tab1, tab2, tab3, tab4 = st.tabs(["🟢 Live Accounts", "🔴 Suspended Accounts", "⚠️ Error Accounts", "📊 All Results"])
-        
-        with tab1:
-            if not live_accounts.empty:
-                st.markdown(f"**Found {len(live_accounts)} live accounts:**")
-                st.dataframe(live_accounts[['username', 'original_line']], use_container_width=True)
+        else:
+            st.info("No suspended accounts")
+    
+    # Error accounts download
+    with col3:
+        error_accounts = df[~df['status'].isin(['live', 'suspended'])]
+        if not error_accounts.empty:
+            if download_format == "TXT":
+                error_data = '\n'.join(error_accounts['original_line'].tolist())
+                file_ext = "txt"
+                mime_type = "text/plain"
             else:
-                st.info("No live accounts found")
+                error_data = error_accounts.to_csv(index=False)
+                file_ext = "csv"
+                mime_type = "text/csv"
+            
+            st.download_button(
+                label=f"📥 Errors ({download_format})",
+                data=error_data,
+                file_name=f"error_accounts_{platform.lower()}.{file_ext}",
+                mime=mime_type
+            )
+        else:
+            st.info("No error accounts")
+    
+    # All results download
+    with col4:
+        if download_format == "TXT":
+            all_data = '\n'.join(df['original_line'].tolist())
+            file_ext = "txt"
+            mime_type = "text/plain"
+        else:
+            all_data = df.to_csv(index=False)
+            file_ext = "csv"
+            mime_type = "text/csv"
         
-        with tab2:
-            if not suspended_accounts.empty:
-                st.markdown(f"**Found {len(suspended_accounts)} suspended accounts:**")
-                st.dataframe(suspended_accounts[['username', 'original_line']], use_container_width=True)
-            else:
-                st.info("No suspended accounts found")
-        
-        with tab3:
-            if not error_accounts.empty:
-                st.markdown(f"**Found {len(error_accounts)} accounts with errors:**")
-                st.dataframe(error_accounts[['username', 'status', 'original_line']], use_container_width=True)
-            else:
-                st.info("No error accounts found")
-        
-        with tab4:
-            st.markdown(f"**All {len(df)} checked accounts:**")
-            st.dataframe(df[['username', 'status', 'original_line']], use_container_width=True)
+        st.download_button(
+            label=f"📥 All Results ({download_format})",
+            data=all_data,
+            file_name=f"all_results_{platform.lower()}.{file_ext}",
+            mime=mime_type
+        )
+    
+    # Results Tables
+    st.markdown("## 📋 Detailed Results")
+    
+    tab1, tab2, tab3 = st.tabs(["🟢 Live Accounts", "🔴 Suspended Accounts", "📊 All Results"])
+    
+    with tab1:
+        live_accounts = df[df['status'] == 'live']
+        if not live_accounts.empty:
+            st.dataframe(live_accounts[['username', 'status', 'original_line']], use_container_width=True)
+        else:
+            st.info("No live accounts found")
+    
+    with tab2:
+        suspended_accounts = df[df['status'] == 'suspended']
+        if not suspended_accounts.empty:
+            st.dataframe(suspended_accounts[['username', 'status', 'original_line']], use_container_width=True)
+        else:
+            st.info("No suspended accounts found")
+    
+    with tab3:
+        st.dataframe(df[['username', 'status', 'original_line']], use_container_width=True)
 
 else:
-    # Welcome page
+    # Welcome Page
     st.markdown("""
     ## 🚀 Welcome to Social Media Account Checker
     
     ### 📋 How to Use:
-    1. **Select Platform** from the sidebar (Instagram, Twitter, or TikTok)
-    2. **Upload Account File** - A text file (.txt) containing usernames
-    3. **Click "Start Checking"** and monitor the real-time progress
-    4. **Download Results** in your preferred format (TXT or CSV)
+    1. **Select Platform** from sidebar (Instagram, Twitter, or TikTok)
+    2. **Choose Input Method** - Upload file or paste text directly
+    3. **Add Accounts** - Either upload .txt file or paste accounts in text area
+    4. **Choose Download Format** - TXT or CSV
+    5. **Click "Start Checking"** and monitor real-time progress
     
-    ### 📁 Account File Format:
+    ### 📝 Input Methods:
+    
+    #### 📁 Upload File:
+    - Upload a .txt file with usernames (one per line)
+    
+    #### ✍️ Paste Text:
+    - Paste accounts directly in the text area
+    - One account per line
+    
+    ### 📁 Account Format:
     ```
     username1
     username2:password
@@ -496,11 +539,12 @@ else:
     
     ### ✨ Features:
     - ✅ Fast and reliable checking
-    - ✅ Professional user interface
-    - ✅ Real-time progress monitoring
-    - ✅ Pause and resume functionality
-    - ✅ Multiple download formats
-    - ✅ Support for all major platforms
+    - ✅ Professional user interface with real-time updates
+    - ✅ Live progress tracking with counters
+    - ✅ Pause/Resume/Stop controls
+    - ✅ Multiple input methods (file upload or text paste)
+    - ✅ Multiple download formats (TXT/CSV)
+    - ✅ Interactive statistics and charts
     
     ### 🔧 Supported Platforms:
     """)
@@ -508,34 +552,28 @@ else:
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); 
-                    padding: 1.5rem; border-radius: 12px; text-align: center; 
-                    border-left: 4px solid {platform_info['Instagram']['color']};">
-            <h4>📷 Instagram</h4>
-            <p>Check account status<br>Detect deleted accounts<br>Analyze active accounts</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("""
+        #### 📷 Instagram
+        - Check account status
+        - Detect deleted accounts
+        - Analyze active profiles
+        """)
     
     with col2:
-        st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); 
-                    padding: 1.5rem; border-radius: 12px; text-align: center; 
-                    border-left: 4px solid {platform_info['Twitter']['color']};">
-            <h4>🐦 Twitter</h4>
-            <p>Check account status<br>Detect suspended accounts<br>Analyze active accounts</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("""
+        #### 🐦 Twitter  
+        - Verify account status
+        - Detect suspended accounts
+        - Check profile availability
+        """)
     
     with col3:
-        st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); 
-                    padding: 1.5rem; border-radius: 12px; text-align: center; 
-                    border-left: 4px solid {platform_info['TikTok']['color']};">
-            <h4>🎵 TikTok</h4>
-            <p>Check account status<br>Detect deleted accounts<br>Analyze active accounts</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("""
+        #### 🎵 TikTok
+        - Check account status
+        - Detect banned accounts
+        - Verify profile existence
+        """)
     
     st.markdown("---")
-    st.info("💡 **Tip:** Start with a small file (10-20 accounts) to test the tool before checking large files")
+    st.info("💡 **Tip:** Start with a small number of accounts (10-20) to test the tool before processing large files")
