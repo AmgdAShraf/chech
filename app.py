@@ -73,12 +73,6 @@ st.markdown("""
         margin: 1rem 0;
         box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
     }
-    
-    .stTextArea > div > div > textarea {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border-radius: 10px;
-        border: 2px solid #667eea;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -108,7 +102,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Live Statistics Counter - Always visible
+# Live Statistics Counter - Always visible with real values
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
@@ -157,7 +151,7 @@ platform = st.sidebar.selectbox(
     index=0
 )
 
-# Input method selection
+# Input Method Selection
 st.sidebar.markdown("## 📝 Input Method")
 input_method = st.sidebar.radio(
     "Choose input method:",
@@ -296,7 +290,7 @@ if len(accounts) > 0:
             if not st.session_state.checking_active:
                 return False
             
-            # Update counters
+            # Update counters based on status
             if status == "live":
                 st.session_state.live_count += 1
             elif status == "suspended":
@@ -314,8 +308,9 @@ if len(accounts) > 0:
             pause_status = " (PAUSED)" if st.session_state.pause_checking else ""
             st.session_state.current_status = f"Checking: {username} ({current}/{total}) - Status: {status}{pause_status}"
             
-            # Force UI update
-            status_placeholder.info(f"🔄 {st.session_state.current_status}")
+            # Force UI update by rerunning every few accounts
+            if current % 3 == 0:  # Update UI every 3 accounts
+                st.rerun()
             
             return st.session_state.checking_active
         
@@ -342,8 +337,8 @@ if len(accounts) > 0:
         st.session_state.checking_active = False
         st.rerun()
 
-# Results Display and Download - Always show if results exist
-if st.session_state.results_data:
+# Results Display and Download - Show if results exist
+if st.session_state.results_data and len(st.session_state.results_data) > 0:
     df = pd.DataFrame(st.session_state.results_data)
     
     st.markdown("---")
@@ -354,11 +349,14 @@ if st.session_state.results_data:
     with col1:
         st.metric("Total Processed", len(st.session_state.results_data))
     with col2:
-        st.metric("Live Accounts", len(df[df['status'] == 'live']))
+        live_count = len(df[df['status'] == 'live'])
+        st.metric("Live Accounts", live_count)
     with col3:
-        st.metric("Suspended Accounts", len(df[df['status'] == 'suspended']))
+        suspended_count = len(df[df['status'] == 'suspended'])
+        st.metric("Suspended Accounts", suspended_count)
     with col4:
-        st.metric("Errors/Unknown", len(df[~df['status'].isin(['live', 'suspended'])]))
+        error_count = len(df[~df['status'].isin(['live', 'suspended'])])
+        st.metric("Errors/Unknown", error_count)
     
     # Charts
     status_counts = df['status'].value_counts()
